@@ -1,4 +1,6 @@
-FROM python:3.12-slim
+# Rockchip NPU runtimes and rknn wheels are linux/arm64 only; building as amd64
+# fails with "not a supported wheel on this platform".
+FROM --platform=linux/arm64 python:3.12-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libgomp1 wget curl sudo git build-essential \

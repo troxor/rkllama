@@ -40,8 +40,8 @@ jobs:
             ${{ github.ref_name }}
             ${{ steps.sha.outputs.short }}
           containerfiles: Dockerfile
-          # Use this instead of platforms: for shorter image labels
-          archs: amd64,arm64
+          # RKLlama bundles aarch64 .so and rknn wheels; amd64 would fail at pip install.
+          archs: arm64
           labels: org.opencontainers.image.source=${{ github.repository }}
       
       - name: Push to Registry
