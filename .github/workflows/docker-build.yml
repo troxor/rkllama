@@ -1,0 +1,54 @@
+#
+name: Docker Build
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/docker-build.yml'
+      - 'src/**'
+    branches: ["main", "master"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker-build:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU  # For cross-arch emulation
+        uses: docker/setup-qemu-action@v3
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Buildah Build  # Builds & creates manifest
+        id: build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: "ghcr.io/${{ github.repository}}"
+          tags: |
+            latest
+            ${{ github.ref_name }}
+            ${{ steps.sha.outputs.short }}
+          containerfiles: Dockerfile
+          # Use this instead of platforms: for shorter image labels
+          archs: amd64,arm64
+          labels: org.opencontainers.image.source=${{ github.repository }}
+      
+      - name: Push to Registry
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build.outputs.image }}
+          tags: ${{ steps.build.outputs.tags }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  # For GHCR
